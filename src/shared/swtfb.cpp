@@ -1,10 +1,13 @@
+#include <iostream>
 #include <QGuiApplication>
 #include <QImage>
+#include <QObject>
 #include <QPaintEngine>
 #include <QPainter>
 #include <QRect>
-#include <iostream>
-#include <QObject>
+#include <QMetaObject>
+#include <QMetaMethod>
+#include <QDebug>
 
 #include "now.cpp"
 #include "qtdump.cpp"
@@ -31,8 +34,10 @@ public:
     char *argv[0];
     int argc = 0;
     app = new QGuiApplication(argc, argv);
-    instance = f_getInstance();
-    img = (QImage *)(instance + 8);
+    auto ptr = f_getInstance();
+    instance = reinterpret_cast<QObject*>(ptr);
+    dump_qtClass(instance);
+    img = (QImage *)(ptr + 8);
     // dump_qtClass(instance);
 
 
@@ -46,8 +51,9 @@ public:
       object->metaObject()->indexOfProperty("clearScreen"), 0);
   }
 
-  void sendUpdate(uint32_t *a, QRect rect, int waveform, int flags=0, bool sync=0) {
-    f_sendUpdate(a, rect, waveform, flags, sync);
+  void sendUpdate(QObject *a, QRect rect, int waveform, int flags=0, bool sync=0) {
+    SendUpdate(rect, waveform, flags, sync);
+//    f_sendUpdate(a, rect, waveform, flags, sync);
 //    QObject *object = static_cast<QObject *>((QObject*) instance);
 //    const QMetaObject *meta = object->metaObject();
 //    int index = object->metaObject()->indexOfProperty("sendUpdate");
@@ -58,6 +64,14 @@ public:
 //    method.invoke(object, Q_ARG(QRect, rect), Q_ARG(int, waveform),
 //      Q_ARG(int, flags), Q_ARG(bool, sync));
   }
+
+  void SendUpdate(const QRect &rect, int waveform, int flags, bool sync) {
+      cerr << "SENDING UPDATE" << endl;
+      QGenericArgument argWaveform("EPFramebuffer::WaveformMode",&waveform);
+      QGenericArgument argUpdateMode("EPFramebuffer::UpdateMode",&flags);
+      QMetaObject::invokeMethod(instance,"sendUpdate", Q_ARG(QRect, rect), argWaveform, argUpdateMode, Q_ARG(bool, sync));
+  }
+
 
   void DrawLine() {
     cout << "drawing a line " << endl;
@@ -98,7 +112,8 @@ public:
 
     QRect rect(x, y, w, h);
     ClockWatch cz;
-    sendUpdate(instance, rect, mode, 0);
+    sendUpdate(instance, rect, mode, 0, 0);
+    // SendUpdate(rect, mode, 0, 0);
 
     #ifdef DEBUG
     cerr << get_now() << " Total Update took " << cz.elapsed() << "s" << endl;
@@ -106,7 +121,7 @@ public:
   }
 
 private:
-  uint32_t *instance;
+  QObject *instance;
   QGuiApplication *app;
   QImage *img;
 
