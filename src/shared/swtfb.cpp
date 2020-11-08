@@ -47,22 +47,11 @@ public:
 
   void clearScreen() {
     QObject *object = static_cast<QObject *>((QObject*) instance);
-    object->qt_metacall(QMetaObject::InvokeMetaMethod,
-      object->metaObject()->indexOfProperty("clearScreen"), 0);
+    QMetaObject::invokeMethod(instance,"clearScreen", Qt::DirectConnection);
   }
 
   void sendUpdate(QObject *a, QRect rect, int waveform, int flags=0, bool sync=0) {
     SendUpdate(rect, waveform, flags, sync);
-//    f_sendUpdate(a, rect, waveform, flags, sync);
-//    QObject *object = static_cast<QObject *>((QObject*) instance);
-//    const QMetaObject *meta = object->metaObject();
-//    int index = object->metaObject()->indexOfProperty("sendUpdate");
-//    QMetaMethod method = meta->method(index);
-//    TODO: why does below not work?
-//    * Does int not work for waveform/flags?
-//    * Is index wrong?
-//    method.invoke(object, Q_ARG(QRect, rect), Q_ARG(int, waveform),
-//      Q_ARG(int, flags), Q_ARG(bool, sync));
   }
 
   void SendUpdate(const QRect &rect, int waveform, int flags, bool sync) {
