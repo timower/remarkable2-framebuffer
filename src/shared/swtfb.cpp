@@ -30,12 +30,12 @@ public:
   }
 
   void setFunc() {
-    int* addr = locate_signature(SDK_BIN, "|@\x9f\xe5|P\x9f\xe5", 8);
+    int* addr = (int*) locate_signature(SDK_BIN.c_str(), "|@\x9f\xe5|P\x9f\xe5", 8);
     if (addr != 0) {
       f_getInstance = (uint32_t * (*)(void))addr;
-      // fprintf(stderr, "ADDR: %x\n", addr);
+      fprintf(stderr, "ADDR: %x\n", addr);
     } else {
-      fprintf(stderr, "COULDNT LOCATE GET INSTANCE FUNCTION\n");
+      fprintf(stderr, "COULDNT LOCATE SIGNATURE IN %s\n", SDK_BIN.c_str());
       fprintf(stderr, "PLEASE SEE https://github.com/ddvk/remarkable2-framebuffer/issues/18\n");
       exit(0);
     }

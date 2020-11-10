@@ -8,35 +8,47 @@
 #include <fcntl.h>
 
 namespace swtfb {
-  int* locate_signature(int fd, const char* find, int N) {
-    char buf[N];
+  // from https://stackoverflow.com/a/14002993/442652
+  char* read_file(const char* filename, int *out_size) {
+    FILE *f = fopen(filename, "rb");
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
 
-    int r;
-    int bytes = 0;
-    int offset = 0x10000;
-    while (true) {
-      r = read(fd, buf, N);
-      if (r != N) {
-        fprintf(stderr, "READ < N BYTES: %i %i\n", r, errno);
-        break;
-      }
+    char *string = (char*) malloc(fsize + 1);
+    fread(string, 1, fsize, f);
+    fclose(f);
 
-      if (strncmp(find, buf, N) == 0) {
-        int* s = (int*) (bytes + offset - 4);
-        return s;
-      }
-      bytes += r;
-    }
-    fprintf(stderr, "READ %i BYTES\n", bytes);
+    string[fsize] = 0;
+    *out_size = fsize;
 
-    return NULL;
+    return string;
   }
 
-  int* locate_signature(string path, const char* find, int N) {
-    int fd = open(path.c_str(), O_RDONLY);
-    fprintf(stderr, "SEARCHING %s %i\n", path.c_str(), fd);
-    int* ret = locate_signature(fd, find, N);
-    close(fd);
+  char* locate_signature(const char* path, const char* find, int N) {
+    int size;
+    char* data = read_file(path, &size);
+
+    int offset = 0x10000;
+    char *ret = NULL;
+
+    bool found;
+    for (int i = 0; i < size - N; i++) {
+      found = true;
+      for (int j = 0; j < N; j++) {
+        if (find[j] != data[i+j]) {
+          found = false;
+          break;
+        }
+      }
+
+      if (found) {
+        ret = (char*) i + offset - 4;
+        break;
+      }
+    }
+
+    free(data);
     return ret;
   }
 }
