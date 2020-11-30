@@ -102,13 +102,23 @@ void doUpdate(const SwtFB &fb, const swtfb_update &s) {
 
 int server_main(int, char **argv, char **) {
   swtfb::SDK_BIN = argv[0];
-  SwtFB fb;
-
-  printf("WAITING FOR SEND UPDATE ON MSG Q\n");
-  while (true) {
-    swtfb_update buf = MSGQ.recv();
-    doUpdate(fb, buf);
+  if (swtfb::SDK_BIN.find("xochitl") == -1) {
+    return 0;
   }
+  SwtFB fb;
+  printf("STARTING RM2FB\n");
+
+
+
+  auto th = new thread([=] {
+    printf("WAITING FOR SEND UPDATE ON MSG Q\n");
+    while (true) {
+      swtfb_update buf = MSGQ.recv();
+      doUpdate(fb, buf);
+    }
+  });
+
+  return 0;
 }
 
 int __libc_start_main(int (*_main)(int, char **, char **), int argc,
@@ -116,11 +126,10 @@ int __libc_start_main(int (*_main)(int, char **, char **), int argc,
                       void (*fini)(void), void (*rtld_fini)(void),
                       void *stack_end) {
 
-  printf("STARTING RM2FB\n");
-
   typeof(&__libc_start_main) func_main =
       (typeof(&__libc_start_main))dlsym(RTLD_NEXT, "__libc_start_main");
 
-  return func_main(server_main, argc, argv, init, fini, rtld_fini, stack_end);
+  server_main(argc, argv, NULL);
+  return func_main(_main, argc, argv, init, fini, rtld_fini, stack_end);
 };
 };
